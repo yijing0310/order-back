@@ -4,6 +4,7 @@ import jwt from "jsonwebtoken";
 import cors from "cors";
 import bcrypt from "bcrypt";
 import adminRouter from "./routes/admin.js";
+import groupRouter from "./routes/group.js";
 const app = express();
 app.use(express.static("public"));
 // **** top-level middlewares 頂層中介軟體 ****
@@ -25,12 +26,15 @@ app.use((req, res, next) => {
         const token = auth.slice(7); // 去掉 'Bearer '
         try {
             req.my_jwt = jwt.verify(token, process.env.JWT_KEY);
-        } catch (ex) {}
+        } catch (ex) {
+            return res.status(403).json({ error: "無效的 Token" });
+        }
     }
     next();
 });
 // ========== 路由模組 ===========
 app.use("/admin", adminRouter);
+app.use("/group", groupRouter);
 
 app.get("/", async (req, res) => {
     const sql = `SELECT * FROM users`;
@@ -51,7 +55,6 @@ app.post("/login-jwt", async (req, res) => {
             token: "",
         },
     };
-    console.log(account, password);
     account = account?.trim();
     password = password?.trim();
 
@@ -68,6 +71,7 @@ app.post("/login-jwt", async (req, res) => {
         return res.json(output);
     }
     const row = rows[0];
+    
     const result = await bcrypt.compare(password, row.password_hash);
     if (!result) {
         output.error = "帳號或密碼錯誤";
@@ -77,7 +81,7 @@ app.post("/login-jwt", async (req, res) => {
     output.success = true;
     const token = jwt.sign(
         {
-            id: row.member_id,
+            id: row.id,
             account: row.account,
         },
         process.env.JWT_KEY,
