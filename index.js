@@ -5,6 +5,7 @@ import cors from "cors";
 import bcrypt from "bcrypt";
 import adminRouter from "./routes/admin.js";
 import groupRouter from "./routes/group.js";
+import './utils/cron.js';
 const app = express();
 app.use(express.static("public"));
 // **** top-level middlewares 頂層中介軟體 ****

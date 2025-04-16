@@ -1,8 +1,57 @@
 import express from "express";
 import { addGroupSchema } from "../utils/schema/addGroupSchema.js";
 import db from "./../utils/connect-mysql.js";
-const router = express.Router();
 
+const router = express.Router();
+// 我的開團
+router.get("/api", async (req, res) => {
+    const output = {
+        success: false,
+        redirect: undefined,
+        data: [],
+        error: "",
+        perPage: 12,
+        totalRows: 0,
+        totalPages: 0,
+        page: 0,
+        keyword: "",
+    };
+    const user_id = req.my_jwt?.id;
+    if (!user_id) {
+        output.error = "用戶未登入";
+        return res.json(output);
+    }
+    const perPage = output.perPage;
+    let page = +req.query.page || 1;
+    if (page < 1) {
+        output.redirect = `?page=1`;
+        return output;
+    }
+
+    try {
+        const tsql = `SELECT COUNT(*) AS totalRows FROM orderGroups WHERE owner_id=?; `;
+        const [[{ totalRows }]] = await db.query(tsql, [user_id]);
+        output.totalRows = totalRows;
+        if (totalRows <= 0) {
+            output.error = "沒有資料";
+        }
+        const totalPages = Math.ceil(totalRows / perPage);
+        if (page > totalPages) {
+            output.redirect = `?page=${totalPages}`;
+            return output;
+        }
+        
+
+        const sql = `SELECT * FROM orderGroups WHERE owner_id=?; `;
+        const [result] = await db.query(sql, [user_id]);
+        let data = [];
+        output.success = true;
+        output.data = result;
+    } catch (ex) {
+        output.ex = ex;
+    }
+    return res.json(output);
+});
 // 開團
 router.post("/add/api", async (req, res) => {
     let {
@@ -16,7 +65,6 @@ router.post("/add/api", async (req, res) => {
         note,
     } = req.body || {};
     const user_id = req.my_jwt?.id;
-    console.log(user_id);
 
     const output = {
         success: false,
