@@ -5,6 +5,8 @@ import cors from "cors";
 import bcrypt from "bcrypt";
 import adminRouter from "./routes/admin.js";
 import groupRouter from "./routes/group.js";
+import orderRouter from "./routes/order.js";
+
 import './utils/cron.js';
 const app = express();
 app.use(express.static("public"));
@@ -36,6 +38,7 @@ app.use((req, res, next) => {
 // ========== 路由模組 ===========
 app.use("/admin", adminRouter);
 app.use("/group", groupRouter);
+app.use("/order", orderRouter);
 
 app.get("/", async (req, res) => {
     const sql = `SELECT * FROM users`;

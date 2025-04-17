@@ -39,7 +39,7 @@ router.get("/api", async (req, res) => {
         const totalPages = Math.ceil(totalRows / perPage);
         if (page > totalPages) {
             output.redirect = `?page=${totalPages}`;
-            return output;
+            return res.json(output);
         }
         // 更新過期資訊
         const updatesql = ` UPDATE orderGroups SET status = 'closed' WHERE deadline < NOW() AND status = 'open'`;
