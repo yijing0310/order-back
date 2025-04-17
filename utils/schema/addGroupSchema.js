@@ -21,8 +21,8 @@ export const addGroupSchema = z.object({
         .string()
         .optional()
         .or(z.literal("")) // 允許空字串
-        .refine((val) => !val || (val.length >= 3 && val.length <= 20), {
-            message: "密碼需為 3~20 字之間",
+        .refine((val) => !val || (val.length >= 3 && val.length <= 10), {
+            message: "密碼需為 3~10 字之間",
         }),
     template: z.enum(["basic", "drink", "custom"]),
     note: z.string().optional(),
