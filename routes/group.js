@@ -1,7 +1,7 @@
 import express from "express";
 import { addGroupSchema } from "../utils/schema/addGroupSchema.js";
 import db from "./../utils/connect-mysql.js";
-import { nanoid } from 'nanoid';
+import { nanoid } from "nanoid";
 
 const router = express.Router();
 // 我的開團 TODO: 分頁
@@ -120,7 +120,7 @@ router.post("/add/api", async (req, res) => {
     `;
     try {
         const [result] = await db.query(addsql, [
-            uuid, 
+            uuid,
             user_id,
             title,
             restaurant,
@@ -140,6 +140,50 @@ router.post("/add/api", async (req, res) => {
     } catch (ex) {
         output.ex = ex;
     }
+    return res.json(output);
+});
+
+// 加入開團
+router.post("/join/api", async (req, res) => {
+    const { group_uuid, password } = req.body;
+    const output = {
+        success: false,
+        group_uuid: "",
+        error: { group_uuid: "", password: "" },
+    };
+    if (!group_uuid?.trim()) {
+        output.error.group_uuid = "請輸入揪團ID";
+        return res.json(output);
+    }
+    try {
+        const sql = `SELECT * FROM orderGroups WHERE group_uuid = ? LIMIT 1`;
+        const [rows] = await db.query(sql, [group_uuid]);
+
+        if (!rows.length) {
+            output.error.group_uuid = "查無此揪團";
+            return res.json(output);
+        }
+
+        const group = rows[0];
+        if (group.password) {
+            if (!password?.trim()) {
+                output.error.password = "請輸入密碼";
+                return res.json(output);
+            }
+
+            if (group.password !== password) {
+                output.error.password = "密碼錯誤";
+                return res.json(output);
+            }
+        }
+    } catch (err) {
+        output.error = "伺服器錯誤，請稍後再試";
+        return res.json(output);
+    }
+
+    output.success = true;
+    output.group_uuid = group_uuid;
+    output.error = "";
     return res.json(output);
 });
 
