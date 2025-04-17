@@ -1,6 +1,7 @@
 import express from "express";
 import { addGroupSchema } from "../utils/schema/addGroupSchema.js";
 import db from "./../utils/connect-mysql.js";
+import { nanoid } from 'nanoid';
 
 const router = express.Router();
 // 我的開團 TODO: 分頁
@@ -112,13 +113,14 @@ router.post("/add/api", async (req, res) => {
         output.error = newError;
         return res.json(output);
     }
-
+    const uuid = nanoid(10);
     // 新增
     const addsql = `
-    INSERT INTO orderGroups (owner_id,title,restaurant,menu_link,max_people,deadline,password,description,template) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+    INSERT INTO orderGroups (group_uuid,owner_id,title,restaurant,menu_link,max_people,deadline,password,description,template) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     `;
     try {
         const [result] = await db.query(addsql, [
+            uuid, 
             user_id,
             title,
             restaurant,
@@ -134,6 +136,7 @@ router.post("/add/api", async (req, res) => {
         output.error = {};
         output.data.user_id = user_id;
         output.data.title = title;
+        output.data.group_uuid = uuid;
     } catch (ex) {
         output.ex = ex;
     }
