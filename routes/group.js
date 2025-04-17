@@ -3,7 +3,7 @@ import { addGroupSchema } from "../utils/schema/addGroupSchema.js";
 import db from "./../utils/connect-mysql.js";
 
 const router = express.Router();
-// 我的開團
+// 我的開團 TODO: 分頁
 router.get("/api", async (req, res) => {
     const output = {
         success: false,
@@ -25,7 +25,7 @@ router.get("/api", async (req, res) => {
     let page = +req.query.page || 1;
     if (page < 1) {
         output.redirect = `?page=1`;
-        return output;
+        return res.json(output);
     }
 
     try {
@@ -40,11 +40,12 @@ router.get("/api", async (req, res) => {
             output.redirect = `?page=${totalPages}`;
             return output;
         }
-        
+        // 更新過期資訊
+        const updatesql = ` UPDATE orderGroups SET status = 'closed' WHERE deadline < NOW() AND status = 'open'`;
+        const [updateResult] = await db.query(updatesql);
 
         const sql = `SELECT * FROM orderGroups WHERE owner_id=?; `;
         const [result] = await db.query(sql, [user_id]);
-        let data = [];
         output.success = true;
         output.data = result;
     } catch (ex) {
