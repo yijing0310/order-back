@@ -146,7 +146,7 @@ router.post("/add/api", async (req, res) => {
     }
 
     try {
-        const sql = `SELECT * FROM orders WHERE group_uuid=?; `;
+        const sql = `SELECT * FROM orderGroups WHERE group_uuid=?; `;
         const [ensureUuid] = await db.query(sql, [group_uuid]);
         if (!ensureUuid.length) {
             output.error = "查無此開團ID";
