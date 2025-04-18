@@ -92,7 +92,7 @@ router.get("/templates/api", async (req, res) => {
     }
 
     try {
-        const sql = `SELECT menu_templates.fields FROM  orderGroups LEFT JOIN menu_templates ON orderGroups.template = menu_templates.name WHERE group_uuid =?; `;
+        const sql = `SELECT menu_templates.fields,orderGroups.template FROM  orderGroups LEFT JOIN menu_templates ON orderGroups.template = menu_templates.name WHERE group_uuid =?; `;
         const [[result]] = await db.query(sql, [group_uuid]);
         output.success = true;
         output.data = result;
