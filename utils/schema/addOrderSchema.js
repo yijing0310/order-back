@@ -5,14 +5,17 @@ export const addOrderSchema = z.object({
     name: z.string().min(1, { message: "訂購人為必填" }),
     item_name: z.string().min(1, { message: "品項為必填" }),
     quantity: z.number().min(1, { message: "數量最少為1" }),
-    price: z.number().min(0, { message: "價錢不得小於0" }),
+    price: z.number().min(1, { message: "價錢不得小於0" }),
     note: z
-    .string()
-    .min(1, { message: "『甜度』與『冰塊』為必填" })
-    .refine(
-        (val) => val.includes("甜度:") && val.includes("冰塊:"),
-        {
-            message: "『甜度』與『冰塊』為必填",
-        }
-    ),
+        .string()
+        .min(1, { message: "『甜度』與『冰塊』為必填" })
+        .refine(
+            (val) =>
+                val.includes("甜度:") &&
+                val.includes("冰塊:") &&
+                val.includes("尺寸:"),
+            {
+                message: "『甜度』、『冰塊』與『尺寸』為必填",
+            }
+        ),
 });
