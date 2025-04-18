@@ -8,7 +8,7 @@ export const addOrderSchema = z.object({
     price: z.number().min(1, { message: "價錢不得小於0" }),
     note: z
         .string()
-        .min(1, { message: "『甜度』與『冰塊』為必填" })
+        .min(1, { message: "『甜度』、『冰塊』與『尺寸』為必填" })
         .refine(
             (val) =>
                 val.includes("甜度:") &&

@@ -45,7 +45,7 @@ router.get("/api", async (req, res) => {
         const updatesql = ` UPDATE orderGroups SET status = 'closed' WHERE deadline < NOW() AND status = 'open'`;
         const [updateResult] = await db.query(updatesql);
 
-        const sql = `SELECT * FROM orderGroups WHERE owner_id=?; `;
+        const sql = `SELECT * FROM orderGroups WHERE owner_id=? ORDER BY created_at desc; `;
         const [result] = await db.query(sql, [user_id]);
         output.success = true;
         output.data = result;
