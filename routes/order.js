@@ -1,5 +1,6 @@
 import express from "express";
 import db from "./../utils/connect-mysql.js";
+import { addOrderSchema } from "../utils/schema/addOrderSchema.js";
 const router = express.Router();
 
 // 獲取該團訂購項目
@@ -73,4 +74,79 @@ router.get("/templates/api", async (req, res) => {
     }
     return res.json(output);
 });
+
+// 新增訂單
+router.post("/add/api", async (req, res) => {
+    let { group_uuid, name, item_name, quantity, price, note } = req.body || {};
+
+    const output = {
+        success: false,
+        error: {
+            group_uuid: "",
+            name: "",
+            item_name: "",
+            quantity: "",
+            price: "",
+            note: "",
+        },
+        data: {
+            name: 0,
+            item_name: "",
+        },
+    };
+
+    const zResult = addOrderSchema.safeParse(req.body);
+    if (!zResult.success) {
+        const newError = {
+            group_uuid: "",
+            name: "",
+            item_name: "",
+            quantity: "",
+            price: "",
+            note: "",
+        };
+        const errMap = new Map();
+
+        zResult.error?.issues.forEach((item) => {
+            const pathKey = item.path[0];
+            if (!errMap.has(pathKey)) {
+                errMap.set(pathKey, item.message);
+                newError[pathKey] = item.message;
+            }
+        });
+        output.error = newError;
+        return res.json(output);
+    }
+
+    try {
+        const sql = `SELECT * FROM orders WHERE group_uuid=?; `;
+        const [ensureUuid] = await db.query(sql, [group_uuid]);
+        if (!ensureUuid.length) {
+            output.error = "查無此開團ID";
+            return res.json(output);
+        }
+
+        // 新增
+        const addsql = `
+        INSERT INTO orders (group_uuid, name, item_name, quantity, price, note) VALUES (?, ?, ?, ?, ?, ?);
+        `;
+        const [result] = await db.query(addsql, [
+            group_uuid,
+            name,
+            item_name,
+            quantity,
+            price,
+            note,
+        ]);
+        output.result = result;
+        output.success = !!result.affectedRows;
+        output.error = {};
+        output.data.name = name;
+        output.data.item_name = item_name;
+    } catch (ex) {
+        output.ex = ex;
+    }
+    return res.json(output);
+});
+
 export default router;
