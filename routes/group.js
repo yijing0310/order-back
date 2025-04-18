@@ -59,6 +59,7 @@ router.post("/add/api", async (req, res) => {
     let {
         title,
         restaurant,
+        tel,
         menuLink,
         limit,
         endTime,
@@ -73,6 +74,7 @@ router.post("/add/api", async (req, res) => {
         error: {
             title: "",
             restaurant: "",
+            tel: "",
             menuLink: "",
             limit: "",
             endTime: "",
@@ -94,6 +96,7 @@ router.post("/add/api", async (req, res) => {
         const newError = {
             title: "",
             restaurant: "",
+            tel: "",
             menuLink: "",
             limit: "",
             endTime: "",
@@ -116,7 +119,7 @@ router.post("/add/api", async (req, res) => {
     const uuid = nanoid(10);
     // 新增
     const addsql = `
-    INSERT INTO orderGroups (group_uuid,owner_id,title,restaurant,menu_link,max_people,deadline,password,description,template) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    INSERT INTO orderGroups (group_uuid,owner_id,title,restaurant,tel,menu_link,max_people,deadline,password,description,template) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     `;
     try {
         const [result] = await db.query(addsql, [
@@ -124,6 +127,7 @@ router.post("/add/api", async (req, res) => {
             user_id,
             title,
             restaurant,
+            tel,
             menuLink,
             limit,
             endTime,

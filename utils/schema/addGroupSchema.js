@@ -3,6 +3,7 @@ import { z } from "zod";
 export const addGroupSchema = z.object({
     title: z.string().min(1, { message: "名稱為必填" }),
     restaurant: z.string().min(1, { message: "餐廳名稱為必填" }),
+    tel: z.string().optional(),
     endTime: z
         .string()
         .min(1, { message: "結束時間為必填" })
