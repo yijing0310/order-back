@@ -3,6 +3,33 @@ import db from "./../utils/connect-mysql.js";
 import { addOrderSchema } from "../utils/schema/addOrderSchema.js";
 const router = express.Router();
 
+// 取得開團項目
+router.get("/list/api", async (req, res) => {
+    const output = {
+        success: false,
+        data: [],
+        error: "",
+    };
+    const { group_uuid } = req.query;
+    if (!group_uuid) {
+        output.error = "缺少開團ID";
+        return res.json(output);
+    }
+    try {
+        // 更新過期資訊
+        const updatesql = ` UPDATE orderGroups SET status = 'closed' WHERE deadline < NOW() AND status = 'open'`;
+        const [updateResult] = await db.query(updatesql);
+
+        const sql = `SELECT * FROM ordergroups WHERE group_uuid=?; `;
+        const [[result]] = await db.query(sql, [group_uuid]);
+        output.success = true;
+        output.data = result;
+    } catch (ex) {
+        output.ex = ex;
+    }
+    return res.json(output);
+});
+
 // 獲取該團訂購項目
 router.get("/api", async (req, res) => {
     const output = {
