@@ -50,4 +50,27 @@ router.get("/api", async (req, res) => {
     return res.json(output);
 });
 
+// 獲取開團模板
+router.get("/templates/api", async (req, res) => {
+    const output = {
+        success: false,
+        data: [],
+        error: "",
+    };
+    const { group_uuid } = req.query;
+    if (!group_uuid) {
+        output.error = "缺少開團ID";
+        return res.json(output);
+    }
+
+    try {
+        const sql = `SELECT menu_templates.fields FROM  orderGroups LEFT JOIN menu_templates ON orderGroups.template = menu_templates.name WHERE group_uuid =?; `;
+        const [[result]] = await db.query(sql, [group_uuid]);
+        output.success = true;
+        output.data = result;
+    } catch (ex) {
+        output.ex = ex;
+    }
+    return res.json(output);
+});
 export default router;
