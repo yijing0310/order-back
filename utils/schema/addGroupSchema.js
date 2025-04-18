@@ -4,6 +4,11 @@ export const addGroupSchema = z.object({
     title: z.string().min(1, { message: "名稱為必填" }),
     restaurant: z.string().min(1, { message: "餐廳名稱為必填" }),
     tel: z.string().optional(),
+    menuLink: z
+    .string()
+    .url("請輸入正確的網址格式")
+    .optional()
+    .or(z.literal("")), 
     endTime: z
         .string()
         .min(1, { message: "結束時間為必填" })
