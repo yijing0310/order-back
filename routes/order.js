@@ -176,4 +176,42 @@ router.post("/add/api", async (req, res) => {
     return res.json(output);
 });
 
+// 付款狀態修改
+router.post("/updatePaid/api", async (req, res) => {
+    let { order_id, status } = req.body || {};
+    const output = {
+        success: false,
+        status: status,
+        error: "",
+    };
+    if (!order_id || typeof order_id !== "number") {
+        output.error = "無效的訂單編號";
+        return res.json(output);
+    }
+    if (status !== "Non-payment" && status !== "Paid") {
+        output.error = "無效的狀態";
+        return res.json(output);
+    }
+
+    try {
+        const newStatus = status == "Non-payment" ? "Paid" : "Non-payment";
+        const sql = `SELECT * FROM orders WHERE id=?`;
+        const [rows] = await db.query(sql, order_id);
+        if (!rows.length) {
+            output.error = "無此訂單編號";
+            return res.json(output);
+        }
+        // 修改
+        const updatesql = `
+        UPDATE orders SET status = ? WHERE id = ?;
+        `;
+        const [result] = await db.query(updatesql, [newStatus, order_id]);
+        output.success = !!result.affectedRows;
+        output.status = newStatus;
+    } catch (ex) {
+        output.ex = ex;
+    }
+    return res.json(output);
+});
+
 export default router;
