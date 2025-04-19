@@ -89,7 +89,7 @@ app.post("/login-jwt", async (req, res) => {
             account: row.account,
         },
         process.env.JWT_KEY,
-        { expiresIn: "12h" }
+        // { expiresIn: "12h" }
     );
     output.data = {
         id: row.id,
