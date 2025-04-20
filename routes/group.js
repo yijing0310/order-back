@@ -30,7 +30,7 @@ router.get("/api", async (req, res) => {
     }
 
     try {
-        const tsql = `SELECT COUNT(*) AS totalRows FROM orderGroups WHERE owner_id=?; `;
+        const tsql = `SELECT COUNT(*) AS totalRows FROM orderGroups WHERE owner_id=? AND is_active =1; `;
         const [[{ totalRows }]] = await db.query(tsql, [user_id]);
         output.totalRows = totalRows;
         if (totalRows <= 0) {
@@ -45,7 +45,7 @@ router.get("/api", async (req, res) => {
         const updatesql = ` UPDATE orderGroups SET status = 'closed' WHERE deadline < NOW() AND status = 'open'`;
         const [updateResult] = await db.query(updatesql);
 
-        const sql = `SELECT * FROM orderGroups WHERE owner_id=? ORDER BY created_at desc; `;
+        const sql = `SELECT * FROM orderGroups WHERE owner_id=? AND is_active =1 ORDER BY created_at desc ; `;
         const [result] = await db.query(sql, [user_id]);
         output.success = true;
         output.data = result;
@@ -160,7 +160,7 @@ router.post("/join/api", async (req, res) => {
         return res.json(output);
     }
     try {
-        const sql = `SELECT * FROM orderGroups WHERE group_uuid = ? LIMIT 1`;
+        const sql = `SELECT * FROM orderGroups WHERE group_uuid = ? AND is_active =1  LIMIT 1`;
         const [rows] = await db.query(sql, [group_uuid]);
 
         if (!rows.length) {

@@ -20,10 +20,14 @@ router.get("/list/api", async (req, res) => {
         const updatesql = ` UPDATE orderGroups SET status = 'closed' WHERE deadline < NOW() AND status = 'open'`;
         const [updateResult] = await db.query(updatesql);
 
-        const sql = `SELECT * FROM ordergroups WHERE group_uuid=?; `;
-        const [[result]] = await db.query(sql, [group_uuid]);
+        const sql = `SELECT * FROM ordergroups WHERE group_uuid=? AND is_active =1 ; `;
+        const [result] = await db.query(sql, [group_uuid]);
+        if (!result.length) {
+            output.error.group_uuid = "查無此揪團";
+            return res.json(output);
+        }
         output.success = true;
-        output.data = result;
+        output.data = result[0];
     } catch (ex) {
         output.ex = ex;
     }
