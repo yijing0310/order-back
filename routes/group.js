@@ -1,5 +1,6 @@
 import express from "express";
 import { addGroupSchema } from "../utils/schema/addGroupSchema.js";
+import { editGroupSchema } from "../utils/schema/editGroupSchema.js";
 import db from "./../utils/connect-mysql.js";
 import { nanoid } from "nanoid";
 
@@ -221,5 +222,90 @@ router.post("/delete/api", async (req, res) => {
         output.error = "伺服器錯誤，請稍後再試";
         return res.json(output);
     }
+});
+
+// 編輯揪團
+router.post("/edit/api", async (req, res) => {
+    let { group_uuid, tel, menuLink, limit, endTime, password, note } =
+        req.body || {};
+
+    const output = {
+        success: false,
+        error: {
+            tel: "",
+            menuLink: "",
+            limit: "",
+            endTime: "",
+            password: "",
+            note: "",
+        },
+        result: "",
+    };
+    if (!group_uuid) {
+        output.error = "無此揪團";
+        return res.json(output);
+    }
+    const tsql = `SELECT count(*) totalRows FROM ordergroups WHERE group_uuid=? AND is_active =1 ; `;
+    const [[{totalRows}]] = await db.query(tsql, [group_uuid]);
+
+    if (totalRows === 0) {
+        output.error = "查無此揪團";
+        return res.json(output);
+    }
+    const zResult = editGroupSchema.safeParse(req.body);
+    if (!zResult.success) {
+        const newError = {
+            tel: "",
+            menuLink: "",
+            limit: "",
+            endTime: "",
+            password: "",
+            template: "",
+            note: "",
+        };
+        const errMap = new Map();
+
+        zResult.error?.issues.forEach((item) => {
+            const pathKey = item.path[0];
+            if (!errMap.has(pathKey)) {
+                errMap.set(pathKey, item.message);
+                newError[pathKey] = item.message;
+            }
+        });
+        output.error = newError;
+        return res.json(output);
+    }
+
+    // 新增
+    const updatesql = `
+    UPDATE orderGroups 
+    SET 
+        tel = ?, 
+        menu_link = ?, 
+        max_people = ?, 
+        deadline = ?, 
+        password = ?, 
+        description = ?
+    WHERE 
+        group_uuid = ?;
+
+    `;
+    try {
+        const [result] = await db.query(updatesql, [
+            tel,
+            menuLink,
+            limit,
+            endTime,
+            password,
+            note,
+            group_uuid,
+        ]);
+        output.success = !!result.affectedRows;
+        output.error = {};
+        output.result = "編輯成功";
+    } catch (ex) {
+        output.ex = ex;
+    }
+    return res.json(output);
 });
 export default router;
