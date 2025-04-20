@@ -220,4 +220,37 @@ router.post("/updatePaid/api", async (req, res) => {
     return res.json(output);
 });
 
+// 刪除此筆訂單
+router.delete("/delete/api", async (req, res) => {
+    let { order_id } = req.body || {};
+    const output = {
+        success: false,
+        result:"",
+        error: "",
+    };
+    if (!order_id || typeof order_id !== "number") {
+        output.error = "無效的訂單編號";
+        return res.json(output);
+    }
+    
+    try {
+        const sql = `SELECT * FROM orders WHERE id=?`;
+        const [rows] = await db.query(sql, order_id);
+        if (!rows.length) {
+            output.error = "無此訂單編號";
+            return res.json(output);
+        }
+        // 修改
+        const deletesql = `
+        DELETE FROM  orders  WHERE id = ?;
+        `;
+        const [result] = await db.query(deletesql, [order_id]);
+        output.success = !!result.affectedRows;
+        output.result = "成功刪除"
+    } catch (ex) {
+        output.ex = ex;
+    }
+    return res.json(output);
+});
+
 export default router;
