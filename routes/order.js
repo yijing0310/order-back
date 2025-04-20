@@ -16,16 +16,18 @@ router.get("/list/api", async (req, res) => {
         return res.json(output);
     }
     try {
-        // 更新過期資訊
-        const updatesql = ` UPDATE orderGroups SET status = 'closed' WHERE deadline < NOW() AND status = 'open'`;
-        const [updateResult] = await db.query(updatesql);
+        const tsql = `SELECT count(*) totalRows FROM ordergroups WHERE group_uuid=? AND is_active =1 ; `;
+        const [[{totalRows}]] = await db.query(tsql, [group_uuid]);
 
-        const sql = `SELECT * FROM ordergroups WHERE group_uuid=? AND is_active =1 ; `;
-        const [result] = await db.query(sql, [group_uuid]);
-        if (!result.length) {
-            output.error.group_uuid = "查無此揪團";
+        if (totalRows === 0) {
+            output.error = "查無此揪團";
             return res.json(output);
         }
+        // 更新過期資訊
+        const updatesql = ` UPDATE orderGroups SET status = 'closed' WHERE deadline < NOW() AND status = 'open'`;
+        await db.query(updatesql);
+        const sql = `SELECT * FROM ordergroups WHERE group_uuid=? AND is_active =1 ; `;
+        const [result] = await db.query(sql, [group_uuid]);
         output.success = true;
         output.data = result[0];
     } catch (ex) {

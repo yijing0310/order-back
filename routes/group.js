@@ -191,4 +191,35 @@ router.post("/join/api", async (req, res) => {
     return res.json(output);
 });
 
+// 刪除開團
+router.post("/delete/api", async (req, res) => {
+    const { group_uuid } = req.body;
+    const output = {
+        success: false,
+        group_uuid: "",
+        error: {},
+    };
+    if (!group_uuid) {
+        output.error.group_uuid = "請輸入揪團ID";
+        return res.json(output);
+    }
+    try {
+        const sql = `UPDATE orderGroups 
+                    SET is_active = 0, status='closed' 
+                    WHERE group_uuid = ? AND is_active = 1;
+                    `;
+        const [result] = await db.query(sql, [group_uuid]);
+        output.success = !!result.affectedRows;
+        output.group_uuid = group_uuid;
+        output.error = "";
+        if (!output.success) {
+            output.error = "無符合條件的資料可刪除或已被刪除";
+            return res.json(output);
+        }
+        return res.json(output);
+    } catch (err) {
+        output.error = "伺服器錯誤，請稍後再試";
+        return res.json(output);
+    }
+});
 export default router;
