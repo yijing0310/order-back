@@ -2,6 +2,7 @@ import express from "express";
 import { registerSchema } from "../utils/schema/rschema.js";
 import { editProfileSchema } from "../utils/schema/editProfileschema.js";
 import { editPasswordschema } from "../utils/schema/editPasswordschema.js";
+import { resetPasswordschema } from "../utils/schema/resetPasswordschema.js";
 import db from "./../utils/connect-mysql.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -251,7 +252,7 @@ router.post("/editPassword/api", async (req, res) => {
     return res.json(output);
 });
 
-// 重設密碼
+// 忘記密碼發送訊息
 router.post("/forgot-password/api", async (req, res) => {
     const { email } = req.body;
     const output = { success: false, error: "", message: "" };
@@ -270,7 +271,7 @@ router.post("/forgot-password/api", async (req, res) => {
         process.env.JWT_KEY,
         { expiresIn: "15m" } //15分鐘到期
     );
-    
+
     const addsql =
         " INSERT INTO reset_tokens (user_id, token, expires_at) VALUES (?, ?, NOW() + INTERVAL 15 MINUTE)";
     await db.query(addsql, [rows[0].id, token]);
@@ -288,6 +289,51 @@ router.post("/forgot-password/api", async (req, res) => {
 
     output.success = true;
     output.message = "✅已發送密碼重設信，請至信箱確認";
+    return res.json(output);
+});
+
+// 重設密碼
+router.post("/reset-password/api", async (req, res) => {
+    const { password, passwordCheck, token } = req.body;
+    const output = { success: false, error: "", message: "" };
+
+    if (!token || !password || !passwordCheck) {
+        output.error = "缺少資料欄位";
+        return res.json(output);
+    }
+    if (password !== passwordCheck) {
+        output.error = "密碼不一致";
+        return res.json(output);
+    }
+    const zResult = resetPasswordschema.safeParse(req.body);
+    if (!zResult.success) {
+        output.error = zResult.error.issues[0].message;
+        return res.json(output);
+    }
+    const tokenSql = "SELECT * FROM reset_tokens WHERE token = ?";
+    const [rows] = await db.query(tokenSql, [token]);
+    const tokenRow = rows[0];
+    
+    if (!tokenRow) {
+        output.error = "無效的連結";
+        return res.json(output);
+    }
+    
+    if (Date.now() > new Date(tokenRow.expires_at).getTime()) {
+        output.error = "連結已過期，請重新發送連結";
+        return res.json(output);
+    }
+
+    const hash = await bcrypt.hash(password, 10);
+    const updateSql = "UPDATE users SET password_hash = ? WHERE id = ?";
+    await db.query(updateSql, [hash, tokenRow.user_id]);
+
+    // 刪除使用過的 token
+    const delSql = "DELETE FROM reset_tokens WHERE token = ?";
+    await db.query(delSql, [token]);
+
+    output.success = true;
+    output.message = "✅密碼重設成功，請重新登入";
     return res.json(output);
 });
 
