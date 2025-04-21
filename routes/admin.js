@@ -4,6 +4,8 @@ import { editProfileSchema } from "../utils/schema/editProfileschema.js";
 import { editPasswordschema } from "../utils/schema/editPasswordschema.js";
 import db from "./../utils/connect-mysql.js";
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import { sendResetPasswordEmail } from "../utils/emailSender.js";
 const router = express.Router();
 
 // 註冊
@@ -248,4 +250,45 @@ router.post("/editPassword/api", async (req, res) => {
     }
     return res.json(output);
 });
+
+// 重設密碼
+router.post("/forgot-password/api", async (req, res) => {
+    const { email } = req.body;
+    const output = { success: false, error: "", message: "" };
+    const sql = "SELECT * FROM users WHERE email = ?";
+    const [rows] = await db.query(sql, [email]);
+    if (!rows.length) {
+        output.error = "⚠️ 錯誤的電子郵件";
+        return res.json(output);
+    }
+
+    const token = jwt.sign(
+        {
+            id: rows[0].id,
+            email: rows[0].email,
+        },
+        process.env.JWT_KEY,
+        { expiresIn: "15m" } //15分鐘到期
+    );
+    
+    const addsql =
+        " INSERT INTO reset_tokens (user_id, token, expires_at) VALUES (?, ?, NOW() + INTERVAL 15 MINUTE)";
+    await db.query(addsql, [rows[0].id, token]);
+
+    // 發送 email
+    const resetUrl = `http://localhost:3000/reset-password?token=${token}`;
+    await sendResetPasswordEmail({
+        to: email,
+        subject: "重設密碼連結",
+        html: `<p>您好，</p>
+            <p>請點擊以下連結重設您的密碼，連結 15 分鐘後失效：</p>
+            <a href="${resetUrl}">${resetUrl}</a>
+            <p>如果您沒有申請重設密碼，請忽略此封信。</p>`,
+    });
+
+    output.success = true;
+    output.message = "✅已發送密碼重設信，請至信箱確認";
+    return res.json(output);
+});
+
 export default router;
