@@ -1,5 +1,6 @@
 import express from "express";
 import { registerSchema } from "../utils/schema/rschema.js";
+import { editProfileSchema } from "../utils/schema/editProfileschema.js";
 import db from "./../utils/connect-mysql.js";
 import bcrypt from "bcrypt";
 const router = express.Router();
@@ -104,5 +105,73 @@ router.get("/profile/api", async (req, res) => {
     }
     return res.json(output);
 });
+// 修改個人資料
+router.post("/editProfile/api", async (req, res) => {
+    let { name, email } = req.body || {};
+
+    const output = {
+        success: false,
+        error: {
+            name: "",
+            email: "",
+        },
+        data: {},
+    };
+    const user_id = req.my_jwt?.id;
+    if (!user_id) {
+        output.error = "用戶未登入";
+        return res.json(output);
+    }
+    const zResult = editProfileSchema.safeParse(req.body);
+    if (!zResult.success) {
+        const newError = {
+            name: "",
+            email: "",
+        };
+        const errMap = new Map();
+
+        zResult.error?.issues.forEach((item) => {
+            const pathKey = item.path[0];
+            if (!errMap.has(pathKey)) {
+                errMap.set(pathKey, item.message);
+                newError[pathKey] = item.message;
+            }
+        });
+        output.error = newError;
+        return res.json(output);
+    }
+    const sql = `SELECT id FROM users WHERE email = ? AND id != ?`;
+    const [rows] = await db.query(sql, [email, user_id]);
+
+    if (rows.length) {
+        output.error.email = "此電子郵件已註冊過";
+        return res.json(output);
+    }
+    // 確認資料是否有更動
+    const esql = `SELECT name, email FROM users WHERE id = ?`;
+    const [originalRows] = await db.query(esql, [user_id]);
+    if (!originalRows.length) {
+        output.error = "找不到該使用者";
+        return res.json(output);
+    }
+    const original = originalRows[0];
+    if (original.name === name && original.email === email) {
+        output.error = "你沒有修改任何資料";
+        return res.json(output);
+    }
+
+    const updatesql = `
+    UPDATE users SET name = ?, email = ? WHERE id = ?;
+    `;
+    try {
+        const [result] = await db.query(updatesql, [name, email,user_id]);
+        output.success = !!result.affectedRows;
+        output.data = { name, email };
+    } catch (ex) {
+        output.ex = ex;
+    }
+    return res.json(output);
+});
+// 
 
 export default router;
