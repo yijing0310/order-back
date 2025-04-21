@@ -77,5 +77,32 @@ router.post("/register/api", async (req, res) => {
     }
     return res.json(output);
 });
+// 獲取個人資料
+router.get("/profile/api", async (req, res) => {
+    const output = {
+        success: false,
+        error: "",
+        result: {},
+    };
+    const user_id = req.my_jwt?.id;
+    if (!user_id) {
+        output.error = "用戶未登入";
+        return res.json(output);
+    }
+    try {
+        const tsql = `SELECT COUNT(*) AS totalRows FROM users WHERE id=? ; `;
+        const [[{ totalRows }]] = await db.query(tsql, [user_id]);
+        if (totalRows <= 0) {
+            output.error = "沒有資料";
+        }
+        const sql = `SELECT name,email,account FROM users WHERE id=? ; `;
+        const [[result]] = await db.query(sql, [user_id]);
+        output.result = result;
+        output.success = true;
+    } catch (ex) {
+        output.ex = ex;
+    }
+    return res.json(output);
+});
 
 export default router;
