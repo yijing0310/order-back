@@ -25,10 +25,13 @@ app.use(cors(corsOptions));
 // ========== 自訂義中間件 ==========
 app.use((req, res, next) => {
     const auth = req.get("Authorization");
+    console.log("Authorization Header:", req.headers.authorization);
     if (auth && auth.indexOf("Bearer ") === 0) {
         const token = auth.slice(7); // 去掉 'Bearer '
         try {
             req.my_jwt = jwt.verify(token, process.env.JWT_KEY);
+            // 如果auth有id代表是會員，沒有代表是訪客揪團使用
+            // const user_id = req.my_jwt?.id;
         } catch (ex) {
             return res.status(403).json({ error: "無效的 Token" });
         }

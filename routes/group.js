@@ -3,6 +3,7 @@ import { addGroupSchema } from "../utils/schema/addGroupSchema.js";
 import { editGroupSchema } from "../utils/schema/editGroupSchema.js";
 import db from "./../utils/connect-mysql.js";
 import { nanoid } from "nanoid";
+import jwt from "jsonwebtoken";
 
 const router = express.Router();
 // 我的開團 TODO: 分頁
@@ -154,6 +155,7 @@ router.post("/join/api", async (req, res) => {
     const output = {
         success: false,
         group_uuid: "",
+        token: "",
         error: { group_uuid: "", password: "" },
     };
     if (!group_uuid?.trim()) {
@@ -181,15 +183,24 @@ router.post("/join/api", async (req, res) => {
                 return res.json(output);
             }
         }
+        // 加入token
+        const token = jwt.sign(
+            {
+                group_uuid,
+                role: "guest",
+            },
+            process.env.JWT_KEY,
+            { expiresIn: "2h" } // 可調整有效時間
+        );
+        output.success = true;
+        output.group_uuid = group_uuid;
+        output.token = token;
+        output.error = "";
+        return res.json(output);
     } catch (err) {
         output.error = "伺服器錯誤，請稍後再試";
         return res.json(output);
     }
-
-    output.success = true;
-    output.group_uuid = group_uuid;
-    output.error = "";
-    return res.json(output);
 });
 
 // 刪除開團
@@ -246,7 +257,7 @@ router.post("/edit/api", async (req, res) => {
         return res.json(output);
     }
     const tsql = `SELECT count(*) totalRows FROM ordergroups WHERE group_uuid=? AND is_active =1 ; `;
-    const [[{totalRows}]] = await db.query(tsql, [group_uuid]);
+    const [[{ totalRows }]] = await db.query(tsql, [group_uuid]);
 
     if (totalRows === 0) {
         output.error = "查無此揪團";

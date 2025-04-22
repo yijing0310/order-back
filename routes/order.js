@@ -3,21 +3,47 @@ import db from "./../utils/connect-mysql.js";
 import { addOrderSchema } from "../utils/schema/addOrderSchema.js";
 const router = express.Router();
 
+// 進入團授權
+export function requireGroupAccess() {
+    return (req, res, next) => {
+        const output = {
+            error: "",
+        };
+        const jwt = req.my_jwt;
+        const group_uuid = req.query.group_uuid;
+
+        // 檢查 JWT 是否有效
+        if (!jwt || !jwt.role || !jwt.group_uuid) {
+            output.error = "未授權，無法獲取信息";
+            return res.json(output); 
+        }
+
+        if (jwt.role === "guest" || jwt.group_uuid === group_uuid) {
+            return next();
+        }
+
+        output.error = "無授權訪問此揪團";
+        return res.json(output); 
+    };
+}
+
 // 取得開團項目
-router.get("/list/api", async (req, res) => {
+router.get("/list/api", requireGroupAccess(), async (req, res) => {
     const output = {
         success: false,
         data: [],
         error: "",
     };
     const { group_uuid } = req.query;
+
     if (!group_uuid) {
         output.error = "缺少開團ID";
         return res.json(output);
     }
+
     try {
         const tsql = `SELECT count(*) totalRows FROM ordergroups WHERE group_uuid=? AND is_active =1 ; `;
-        const [[{totalRows}]] = await db.query(tsql, [group_uuid]);
+        const [[{ totalRows }]] = await db.query(tsql, [group_uuid]);
 
         if (totalRows === 0) {
             output.error = "查無此揪團";
@@ -127,6 +153,11 @@ router.post("/add/api", async (req, res) => {
             item_name: "",
         },
     };
+    const jwt = req?.req.my_jwt;
+    if (jwt.role !== "guest" && jwt.group_uuid !== group_uuid) {
+        output.error = "無授權訪問此揪團";
+        return res.json(output);
+    }
 
     const zResult = addOrderSchema.safeParse(req.body);
     if (!zResult.success) {
@@ -225,14 +256,14 @@ router.delete("/delete/api", async (req, res) => {
     let { order_id } = req.body || {};
     const output = {
         success: false,
-        result:"",
+        result: "",
         error: "",
     };
     if (!order_id || typeof order_id !== "number") {
         output.error = "無效的訂單編號";
         return res.json(output);
     }
-    
+
     try {
         const sql = `SELECT * FROM orders WHERE id=?`;
         const [rows] = await db.query(sql, order_id);
@@ -246,7 +277,7 @@ router.delete("/delete/api", async (req, res) => {
         `;
         const [result] = await db.query(deletesql, [order_id]);
         output.success = !!result.affectedRows;
-        output.result = "成功刪除"
+        output.result = "成功刪除";
     } catch (ex) {
         output.ex = ex;
     }
