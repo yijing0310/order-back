@@ -153,11 +153,7 @@ router.post("/add/api", async (req, res) => {
             item_name: "",
         },
     };
-    const jwt = req?.req.my_jwt;
-    if (jwt.role !== "guest" && jwt.group_uuid !== group_uuid) {
-        output.error = "無授權訪問此揪團";
-        return res.json(output);
-    }
+    
 
     const zResult = addOrderSchema.safeParse(req.body);
     if (!zResult.success) {
