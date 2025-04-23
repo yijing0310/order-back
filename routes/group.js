@@ -319,4 +319,38 @@ router.post("/edit/api", async (req, res) => {
     }
     return res.json(output);
 });
+
+// 立即截止修改
+router.post("/updateEndTime/api", async (req, res) => {
+    let { group_id } = req.body || {};
+    const output = {
+        success: false,
+        error: "",
+    };
+    if (!group_id || typeof group_id !== "number") {
+        output.error = "無效的揪團編號";
+        return res.json(output);
+    }
+    
+
+    try {
+        const sql = `SELECT * FROM orderGroups WHERE id=?`;
+        const [rows] = await db.query(sql, group_id);
+        if (!rows.length) {
+            output.error = "無此揪團";
+            return res.json(output);
+        }
+        // 修改
+        const updatesql = `
+        UPDATE orderGroups SET deadline = CURRENT_TIMESTAMP ,status = "closed" WHERE id = ?;
+        `;
+        const [result] = await db.query(updatesql, [group_id]);
+        output.success = !!result.affectedRows;
+        output.status = newStatus;
+    } catch (ex) {
+        output.error = ex;
+    }
+    return res.json(output);
+});
+
 export default router;

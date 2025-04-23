@@ -242,7 +242,7 @@ router.post("/updatePaid/api", async (req, res) => {
         output.success = !!result.affectedRows;
         output.status = newStatus;
     } catch (ex) {
-        output.ex = ex;
+        output.error = ex;
     }
     return res.json(output);
 });
@@ -279,5 +279,7 @@ router.delete("/delete/api", async (req, res) => {
     }
     return res.json(output);
 });
+
+
 
 export default router;
